@@ -19,7 +19,7 @@
 <!--              <span>{{ scope.name }}</span>-->
 <!--              <span>{{ scope }}</span>-->
 <!--              <span>{{ article.scopes.all }}</span>-->
-              <span class="badge {% if scope.is_main %}badge-primary{% else %}badge-secondary{% endif %}">{{ scope.name }}</span>
+              <span class="badge {% if scope.is_main %}badge-primary{% else %}badge-secondary{% endif %}">{{ scope.tag.name }}</span>
             {% endfor %}
           </div>
         </div>

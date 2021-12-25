@@ -2,24 +2,36 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.forms import BaseInlineFormSet
 from django.contrib import admin
-from .models import Tag, Article, Scope
+from .models import Tag, Article, TagScope
 
 
-class ArticleTagInlineFormset(BaseInlineFormSet):
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ['name']
+    search_fields = ['name']
+
+
+class ScopesInlineFormset(BaseInlineFormSet):
     def clean(self):
-        for form in self.forms:
-            # В form.cleaned_data будет словарь с данными
-            # каждой отдельной формы, которые вы можете проверить
-            form.cleaned_data
-            # вызовом исключения ValidationError можно указать админке о наличие ошибки
-            # таким образом объект не будет сохранен,
-            # а пользователю выведется соответствующее сообщение об ошибке
-            raise ValidationError('Тут всегда ошибка')
-        return super().clean()  # вызываем базовый код переопределяемого метода
+        all_tag_count = list(form.cleaned_data['tag'].id for form in self.forms if form.cleaned_data)
+        main_tag_count = list(form.cleaned_data['tag'].id for form in self.forms if form.cleaned_data if form.cleaned_data['is_main'] is True)
+
+        if len(main_tag_count) > 1:
+            raise ValidationError('Основной раздел может быть только один!')
+
+        if len(all_tag_count) > 0 and len(main_tag_count) < 1:
+            raise ValidationError('Должен быть хотябы один основной раздел!')
+
+        if len(all_tag_count) != len(set(all_tag_count)):
+            raise ValidationError('Ошибка: Два одинаковых раздела!')
+
+        return super().clean()
 
 
 class ScopeInline(admin.TabularInline):
-    model = Scope
+    model = TagScope
+    formset = ScopesInlineFormset
+    extra = 1
 
 
 @admin.register(Article)
@@ -27,8 +39,3 @@ class ArticleAdmin(admin.ModelAdmin):
     list_display = ['title', 'text', 'published_at', 'image']
     list_filter = ['published_at']
     inlines = [ScopeInline]
-
-
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = ['name']
